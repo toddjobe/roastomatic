@@ -1,33 +1,55 @@
+// Standard libraries 
 #include <Wire.h>
+
+// Third-party libraries
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <max6675.h>      // Thermocouple amplifier library
+
+// Local libraries
 #include "button.h"
 
 // OLED display width and height, in pixels
-const int screen_width = 128;
-const int screen_height = 64;
-const int oled_reset = -1;
+const int SCREEN_WIDTH = 128;
+const int SCREEN_HEIGHT = 64;
+const int OLED_RESET = -1;
 
 // I2C address for the OLED display
 #define OLED_ADDRESS 0x3C
 
 // The potentiometers will turn 300 degrees
-const int adc_bit_depth = 12;
-const float max_dial = (300.0 / 360.0) * 10.0;
-const int max_pot_value = (1 << adc_bit_depth) -1;
+const int ADC_BIT_DEPTH = 12;
+const float MAX_DIAL = (300.0 / 360.0) * 10.0;
+const int MAX_POT_VALUE = (1 << ADC_BIT_DEPTH) - 1;
 
-// pin map
-// potentiometer pings
-const int fanPotPin = 32;
-const int heatPotPin = 33;
+// Only sample the thermocouples every 250ms
+const int MIN_TEMP_SAMPLE_RATE = 250;
 
-// screen pins
-const int i2c_sda = 21;
-const int i2c_scl = 22;
+/////////////////////////
+// Pin Map
+/////////////////////////
 
-// button pins
-const int buttonPins[] = { 15, 13, 12, 14, 27 };
-const int numButtons = (sizeof(buttonPins) / sizeof(*buttonPins));
+// Potentiometer pins
+const int FAN_POT_PIN = 32;
+const int HEAT_POT_PIN = 33;
+
+// Thermocouple pins
+// ESP32 Default SPI Pins
+// MOSI 23
+// MISO 19
+// SCK 18
+// SS 5
+const int MISO_PIN = 23;
+const int CS_BEAN_PIN = 5;
+const int CS_INTAKE_PIN = 4;
+
+// Screen pins
+const int I2C_SDA = 21;
+const int I2C_SCL = 22;
+
+// Button pins
+const int BUTTON_PINS[] = { 15, 13, 12, 14, 27 };
+const int NUM_BUTTONS = (sizeof(BUTTON_PINS) / sizeof(*BUTTON_PINS));
 
 // Variables to hold button states and previous button states
 // Button 0: Program
@@ -35,32 +57,37 @@ const int numButtons = (sizeof(buttonPins) / sizeof(*buttonPins));
 // Button 2: Auto
 // Button 3: Zero
 // Button 4: 100g zero
-Button buttons[numButtons] = { Button(buttonPins[0], 3), Button(buttonPins[1], 3),
-                               Button(buttonPins[2], 4), Button(buttonPins[3], 5),
-                               Button(buttonPins[4], 6) };
-
+Button buttons[NUM_BUTTONS] = { Button(BUTTON_PINS[0], 4), Button(BUTTON_PINS[1], 3),
+                                Button(BUTTON_PINS[2], 4), Button(BUTTON_PINS[3], 5),
+                                Button(BUTTON_PINS[4], 6) };
 
 // Create an instance of the SSD1306 display
-Adafruit_SSD1306 display(screen_width, screen_height, &Wire, oled_reset);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-int fanValue; // ADC value read at pin
-int fanDuty;  // Duty cycle in percent
-int fanDial;  // Dial position 
-int heatValue;
-int heatDuty;
-int heatDial;
+// MAX6675 Thermocouple amplifiers
+MAX6675 bean_thermocouple(SCK, CS_BEAN_PIN, MISO_PIN);
+MAX6675 intake_thermocouple(SCK, CS_INTAKE_PIN, MISO_PIN);
 
+// Global variables
+int fan_value; // ADC value read at pin
+int fan_duty;  // Duty cycle in percent
+int fan_dial;  // Dial position 
+int heat_value;
+int heat_duty;
+int heat_dial;
+float bean_temp_f;
+float intake_temp_f;
+
+int start_temp_sample;
 int current_program = 0;
 
-// in the case of a false hit, when it's triggered I started the clock running.  outDelay
 void setup() {
   Serial.begin(115200);
 
   // Initialize the OLED display
   if (!display.begin(SSD1306_BLACK, OLED_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ;
+    for (;;);
   }
 
   // Clear the display buffer
@@ -68,38 +95,36 @@ void setup() {
   display.setTextColor(SSD1306_WHITE);
   display.setTextSize(1);
 
-  // Begin Buttons
-  for (int i = 0; i < numButtons; i++) {
+  // Initialize Buttons
+  for (int i = 0; i < NUM_BUTTONS; i++) {
     buttons[i].begin();
   }
 
-  // Begin Potentiometers
-  pinMode(fanPotPin, INPUT);
-  pinMode(heatPotPin, INPUT);
+  // Initialize Potentiometers
+  pinMode(FAN_POT_PIN, INPUT);
+  pinMode(HEAT_POT_PIN, INPUT);
 }
 
-void testButtonsSetup(){}
-void testButtons() {
+void test_buttons_setup() {}
+void test_buttons() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.println("Test Buttons");
 
-  for (int i = 0; i < numButtons; i++) {
-    // Display the weight on the OLED
+  for (int i = 0; i < NUM_BUTTONS; i++) {
     display.print("Button ");
     display.print(i);
     display.print(": ");
     display.println(buttons[i].count());
   }
   display.display();
-  delay(100);
 }
 
-void testDisplaySetup() {
+void test_display_setup() {
   buttons[1].setNStates(4);
 }
-void testDisplay() {
+void test_display() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
@@ -108,23 +133,10 @@ void testDisplay() {
   display.setCursor(0, 8);
   display.println("012345678912345678921");
   display.display();
-
-  delay(100);
 }
-void testPotentiometersSetup() {
-}
-void testPotentiometers() {
 
-  // Read the raw ADC values
-  fanValue = analogRead(fanPotPin);
-  heatValue = analogRead(heatPotPin);
-
-  fanDuty = (fanValue * 100) / 4095;
-  heatDuty = (heatValue * 100) / 4095;
-
-  fanDial = (max_dial * fanValue * 100.0) / max_pot_value;
-  heatDial = (max_dial * heatValue * 100.0) / max_pot_value;
-
+void test_potentiometers_setup() {}
+void test_potentiometers() {
   char buffer[22];
   display.clearDisplay();
   display.setTextSize(1);
@@ -133,62 +145,65 @@ void testPotentiometers() {
   display.println("");
   display.println("Pot   Res Duty Dial");
   display.println("-------------------");
-  snprintf(buffer, 22, "Fan  %4d %3d%% %1d.%02d", fanValue, fanDuty, fanDial / 100, fanDial % 100);
+  snprintf(buffer, 22, "Fan  %4d %3d%% %1d.%02d", fan_value, fan_duty, fan_dial / 100, fan_dial % 100);
   display.println(buffer);
-  snprintf(buffer, 22, "Heat %4d %3d%% %1d.%02d", heatValue, heatDuty, heatDial / 100, heatDial % 100);
+  snprintf(buffer, 22, "Heat %4d %3d%% %1d.%02d", heat_value, heat_duty, heat_dial / 100, heat_dial % 100);
   display.println(buffer);
-
   display.display();
-  delay(100);
 }
 
-void testThermocouplesSetup() {
-}
-void testThermocouples() {
+void test_thermocouples_setup() {}
+void test_thermocouples() {
   char buffer[22];
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.println("Test Thermocouples");
-  display.println("Therm   °C  °F");
-  display.println("---------------------");
-  snprintf(buffer, 22, "Intake  %4d %3d.%01d%% %1d.%02d", fanValue, fanDuty / 10, fanDuty % 10, fanDial / 100, fanDial % 100);
+  display.println("");
+  display.println("Therm.   F. deg.");
+  display.println("-------------------");
+  snprintf(buffer, 22, "Intake  %3d.%02d", (int) intake_temp_f, (int) (intake_temp_f * 10.0) % 10);
   display.println(buffer);
-  snprintf(buffer, 22, "Bean  %4d %3d.%01d%% %1d.%02d", fanValue, fanDuty / 10, fanDuty % 10, fanDial / 100, fanDial % 100);
+  snprintf(buffer, 22, "Bean    %3d.%02d", (int) bean_temp_f, (int) (bean_temp_f * 10.0) % 10);
   display.println(buffer);
-
   display.display();
-  delay(100);
 }
 
 void loop() {
+  // Read the raw ADC potentiometer values
+  fan_value = analogRead(FAN_POT_PIN);
+  heat_value = analogRead(HEAT_POT_PIN);
 
-  // setup programs when program switches
+  fan_duty = (fan_value * 100) / 4095;
+  heat_duty = (heat_value * 100) / 4095;
+
+  fan_dial = (MAX_DIAL * fan_value * 100.0) / MAX_POT_VALUE;
+  heat_dial = (MAX_DIAL * heat_value * 100.0) / MAX_POT_VALUE;
+
+  // Read the MAX6675 amplified thermocouples
+  int elapsed_temp_sample = millis() - start_temp_sample;
+  if (elapsed_temp_sample >= MIN_TEMP_SAMPLE_RATE) {
+    bean_temp_f = bean_thermocouple.readFarenheit();
+    intake_temp_f = intake_thermocouple.readFarenheit();
+    start_temp_sample = millis();
+  }
+
+  // Setup programs when program switches
   if (current_program != buttons[0].count()) {
     switch (buttons[0].count()) {
-      case 0:  // Button Tester
-        testButtonsSetup();
-        break;
-      case 1:  // Screen Tester
-        testDisplaySetup();
-        break;
-      case 2:  // Potentiometer Tester
-        testPotentiometersSetup();
-        break;
+      case 0: test_buttons_setup(); break;
+      case 1: test_display_setup(); break;
+      case 2: test_potentiometers_setup(); break;
+      case 3: test_thermocouples_setup(); break;
     }
     current_program = buttons[0].count();
   }
 
   switch (buttons[0].count()) {
-    case 0:  // Button Tester
-      testButtons();
-      break;
-    case 1:  // Screen Tester
-      testDisplay();
-      break;
-    case 2:  // Potentiometer Tester
-      testPotentiometers();
-      break;
+    case 0: test_buttons(); break;
+    case 1: test_display(); break;
+    case 2: test_potentiometers(); break;
+    case 3: test_thermocouples(); break;
   }
-
+  delay(100);
 }
