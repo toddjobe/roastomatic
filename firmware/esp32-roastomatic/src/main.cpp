@@ -1,5 +1,8 @@
 // Standard libraries 
+#include <driver/ledc.h>  // PWM library.  Works with 3.0.7
+#include "esp_err.h"
 #include <Wire.h>
+#include <stdio.h>
 
 // Third-party libraries
 #include <Adafruit_GFX.h>
@@ -8,6 +11,14 @@
 
 // Local libraries
 #include "button.h"
+
+// SSR Heater Pin for Pulse Width Modulation
+#define HEAT_MODE         LEDC_LOW_SPEED_MODE
+#define HEAT_FREQUENCY    1
+#define HEAT_TIMER        LEDC_TIMER_0
+#define HEAT_CHANNEL      LEDC_CHANNEL_0
+#define HEAT_DUTY_RES     LEDC_TIMER_12_BIT
+
 
 // OLED display width and height, in pixels
 const int SCREEN_WIDTH = 128;
@@ -28,6 +39,7 @@ const int MIN_TEMP_SAMPLE_RATE = 250;
 /////////////////////////
 // Pin Map
 /////////////////////////
+
 
 // Potentiometer pins
 const int FAN_POT_PIN = 32;
@@ -51,13 +63,20 @@ const int I2C_SCL = 22;
 const int BUTTON_PINS[] = { 15, 13, 12, 14, 27 };
 const int NUM_BUTTONS = (sizeof(BUTTON_PINS) / sizeof(*BUTTON_PINS));
 
+// PWM pins
+const int HEAT_PWM_PIN = 26;
+
+/////////////
+// Variables
+/////////////
+
 // Variables to hold button states and previous button states
 // Button 0: Program
 // Button 1: Power
 // Button 2: Auto
 // Button 3: Zero
 // Button 4: 100g zero
-Button buttons[NUM_BUTTONS] = { Button(BUTTON_PINS[0], 4), Button(BUTTON_PINS[1], 3),
+Button buttons[NUM_BUTTONS] = { Button(BUTTON_PINS[0], 5), Button(BUTTON_PINS[1], 3),
                                 Button(BUTTON_PINS[2], 4), Button(BUTTON_PINS[3], 5),
                                 Button(BUTTON_PINS[4], 6) };
 
@@ -67,6 +86,25 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // MAX6675 Thermocouple amplifiers
 MAX6675 bean_thermocouple(SCK, CS_BEAN_PIN, MISO_PIN);
 MAX6675 intake_thermocouple(SCK, CS_INTAKE_PIN, MISO_PIN);
+
+// Setup Heat PWM
+ledc_timer_config_t heat_timer = {
+  .speed_mode       = HEAT_MODE,
+  .duty_resolution  = HEAT_DUTY_RES,
+  .timer_num        = HEAT_TIMER,
+  .freq_hz          = HEAT_FREQUENCY,  // Set output frequency at 4 kHz
+  .clk_cfg          = LEDC_AUTO_CLK
+};
+
+ledc_channel_config_t heat_channel = {
+  .gpio_num       = HEAT_PWM_PIN,
+  .speed_mode     = HEAT_MODE,
+  .channel        = HEAT_CHANNEL,
+  .intr_type      = LEDC_INTR_DISABLE,
+  .timer_sel      = HEAT_TIMER,
+  .duty           = 0,
+  .hpoint         = 0
+};
 
 // Global variables
 int fan_value; // ADC value read at pin
@@ -103,6 +141,10 @@ void setup() {
   // Initialize Potentiometers
   pinMode(FAN_POT_PIN, INPUT);
   pinMode(HEAT_POT_PIN, INPUT);
+
+  // Initialize Heat PWM 
+  ESP_ERROR_CHECK(ledc_timer_config(&heat_timer));
+  ESP_ERROR_CHECK(ledc_channel_config(&heat_channel));
 }
 
 void test_buttons_setup() {}
@@ -149,6 +191,8 @@ void test_potentiometers() {
   display.println(buffer);
   snprintf(buffer, 22, "Heat %4d %3d%% %1d.%02d", heat_value, heat_duty, heat_dial / 100, heat_dial % 100);
   display.println(buffer);
+  snprintf(buffer, 22, "SSR LED should match duty");
+  display.println(buffer);
   display.display();
 }
 
@@ -169,13 +213,30 @@ void test_thermocouples() {
   display.display();
 }
 
+void test_pwm_heater_setup() {
+}
+void test_pwm_heater(){
+  char buffer[22];
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("Test PWM Heater");
+  display.println("");
+  display.println("% Duty");
+  display.println("-------------------");
+  snprintf(buffer, 22, "Intake  %3d.%02d", (int) intake_temp_f, (int) (intake_temp_f * 10.0) % 10);
+  display.println(buffer);
+  snprintf(buffer, 22, "Bean    %3d.%02d", (int) bean_temp_f, (int) (bean_temp_f * 10.0) % 10);
+  display.println(buffer);
+  display.display();
+}
 void loop() {
   // Read the raw ADC potentiometer values
   fan_value = analogRead(FAN_POT_PIN);
   heat_value = analogRead(HEAT_POT_PIN);
 
-  fan_duty = (fan_value * 100) / 4095;
-  heat_duty = (heat_value * 100) / 4095;
+  fan_duty = (fan_value * 100) / MAX_POT_VALUE;
+  heat_duty = (heat_value * 100) / MAX_POT_VALUE;
 
   fan_dial = (MAX_DIAL * fan_value * 100.0) / MAX_POT_VALUE;
   heat_dial = (MAX_DIAL * heat_value * 100.0) / MAX_POT_VALUE;
@@ -187,6 +248,10 @@ void loop() {
     intake_temp_f = intake_thermocouple.readFarenheit();
     start_temp_sample = millis();
   }
+
+  // Set the duty cycle of the heat PWM based on heat potentiometer
+  ledc_set_duty(HEAT_MODE, HEAT_CHANNEL, heat_value);
+  ledc_update_duty(HEAT_MODE, HEAT_CHANNEL);
 
   // Setup programs when program switches
   if (current_program != buttons[0].count()) {
