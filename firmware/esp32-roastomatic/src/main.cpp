@@ -12,13 +12,19 @@
 // Local libraries
 #include "button.h"
 
-// SSR Heater Pin for Pulse Width Modulation
+// SSR Heater Clock setup for Pulse Width Modulation
 #define HEAT_MODE         LEDC_LOW_SPEED_MODE
 #define HEAT_FREQUENCY    1
 #define HEAT_TIMER        LEDC_TIMER_0
 #define HEAT_CHANNEL      LEDC_CHANNEL_0
 #define HEAT_DUTY_RES     LEDC_TIMER_12_BIT
 
+// TIP120 Fan Clock setup for Pulse Width Modulation
+#define FAN_MODE         LEDC_LOW_SPEED_MODE
+#define FAN_FREQUENCY    15000
+#define FAN_TIMER        LEDC_TIMER_1
+#define FAN_CHANNEL      LEDC_CHANNEL_1
+#define FAN_DUTY_RES     LEDC_TIMER_12_BIT
 
 // OLED display width and height, in pixels
 const int SCREEN_WIDTH = 128;
@@ -65,6 +71,7 @@ const int NUM_BUTTONS = (sizeof(BUTTON_PINS) / sizeof(*BUTTON_PINS));
 
 // PWM pins
 const int HEAT_PWM_PIN = 26;
+const int FAN_PWM_PIN = 25;
 
 /////////////
 // Variables
@@ -92,7 +99,7 @@ ledc_timer_config_t heat_timer = {
   .speed_mode       = HEAT_MODE,
   .duty_resolution  = HEAT_DUTY_RES,
   .timer_num        = HEAT_TIMER,
-  .freq_hz          = HEAT_FREQUENCY,  // Set output frequency at 4 kHz
+  .freq_hz          = HEAT_FREQUENCY,
   .clk_cfg          = LEDC_AUTO_CLK
 };
 
@@ -102,6 +109,25 @@ ledc_channel_config_t heat_channel = {
   .channel        = HEAT_CHANNEL,
   .intr_type      = LEDC_INTR_DISABLE,
   .timer_sel      = HEAT_TIMER,
+  .duty           = 0,
+  .hpoint         = 0
+};
+
+// Setup Fan PWM
+ledc_timer_config_t fan_timer = {
+  .speed_mode       = FAN_MODE,
+  .duty_resolution  = FAN_DUTY_RES,
+  .timer_num        = FAN_TIMER,
+  .freq_hz          = FAN_FREQUENCY,
+  .clk_cfg          = LEDC_AUTO_CLK
+};
+
+ledc_channel_config_t fan_channel = {
+  .gpio_num       = FAN_PWM_PIN,
+  .speed_mode     = FAN_MODE,
+  .channel        = FAN_CHANNEL,
+  .intr_type      = LEDC_INTR_DISABLE,
+  .timer_sel      = FAN_TIMER,
   .duty           = 0,
   .hpoint         = 0
 };
@@ -145,6 +171,10 @@ void setup() {
   // Initialize Heat PWM 
   ESP_ERROR_CHECK(ledc_timer_config(&heat_timer));
   ESP_ERROR_CHECK(ledc_channel_config(&heat_channel));
+
+  // Initialize Fan PWM 
+  ESP_ERROR_CHECK(ledc_timer_config(&fan_timer));
+  ESP_ERROR_CHECK(ledc_channel_config(&fan_channel));
 }
 
 void test_buttons_setup() {}
@@ -252,6 +282,10 @@ void loop() {
   // Set the duty cycle of the heat PWM based on heat potentiometer
   ledc_set_duty(HEAT_MODE, HEAT_CHANNEL, heat_value);
   ledc_update_duty(HEAT_MODE, HEAT_CHANNEL);
+
+  // Set the duty cycle of the fan PWM based on fan potentiometer
+  ledc_set_duty(FAN_MODE, FAN_CHANNEL, fan_value);
+  ledc_update_duty(FAN_MODE, FAN_CHANNEL);
 
   // Setup programs when program switches
   if (current_program != buttons[0].count()) {
