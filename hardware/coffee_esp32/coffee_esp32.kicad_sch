@@ -4159,12 +4159,6 @@
 		(uuid "00ed38f8-70e6-4889-ae4e-54a022f99202")
 	)
 	(junction
-		(at 189.23 105.41)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "02239d10-7c20-48d6-bd64-f609673edd3a")
-	)
-	(junction
 		(at 33.02 66.04)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4175,12 +4169,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "434060d2-9a5f-4d0d-87b0-84f83845e076")
-	)
-	(junction
-		(at 139.7 120.65)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "4dcc0dc8-c1fb-4a0b-b926-115687587b05")
 	)
 	(junction
 		(at 52.07 73.66)
@@ -4255,10 +4243,6 @@
 		(uuid "49190231-8cee-4abc-af0b-410ab09b8b7b")
 	)
 	(no_connect
-		(at 180.34 95.25)
-		(uuid "503de221-5854-4a7b-b5da-1908cc77e730")
-	)
-	(no_connect
 		(at 87.63 139.7)
 		(uuid "6392d5f1-3251-4c6c-ace1-de343a0f3a68")
 	)
@@ -4287,10 +4271,6 @@
 		(uuid "cb977950-14b6-4565-baef-f910cb291a97")
 	)
 	(no_connect
-		(at 180.34 97.79)
-		(uuid "d365871e-d411-426b-9471-454ff5b6d22f")
-	)
-	(no_connect
 		(at 149.86 90.17)
 		(uuid "dd2c6855-470b-4ead-a90f-bf5813d98651")
 	)
@@ -4309,16 +4289,6 @@
 	(no_connect
 		(at 180.34 87.63)
 		(uuid "fe689de1-0412-4f97-a30c-df98d7e823eb")
-	)
-	(wire
-		(pts
-			(xy 180.34 102.87) (xy 181.61 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "043b8f51-972d-494a-aa6b-454f3e2bc8dd")
 	)
 	(wire
 		(pts
@@ -4442,26 +4412,6 @@
 	)
 	(wire
 		(pts
-			(xy 189.23 105.41) (xy 191.77 105.41)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2e5350ad-26e8-4dcc-aff5-d31312da02cc")
-	)
-	(wire
-		(pts
-			(xy 180.34 105.41) (xy 189.23 105.41)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "34898cee-48e1-4bd2-a9f8-d96c0259e691")
-	)
-	(wire
-		(pts
 			(xy 180.34 80.01) (xy 182.88 80.01)
 		)
 		(stroke
@@ -4489,16 +4439,6 @@
 			(type default)
 		)
 		(uuid "38619475-bb95-4600-8349-66ae53f65e25")
-	)
-	(wire
-		(pts
-			(xy 189.23 102.87) (xy 191.77 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3909e1a7-4791-49ab-b5b7-92f7ed2709a7")
 	)
 	(wire
 		(pts
@@ -4552,16 +4492,6 @@
 	)
 	(wire
 		(pts
-			(xy 138.43 118.11) (xy 139.7 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4c274c7f-6f08-418c-9a65-0a4b6b82fe4f")
-	)
-	(wire
-		(pts
 			(xy 223.52 91.44) (xy 223.52 92.71)
 		)
 		(stroke
@@ -4582,16 +4512,6 @@
 	)
 	(wire
 		(pts
-			(xy 189.23 105.41) (xy 189.23 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "53f48e65-59bf-4090-8d46-ef28a0c999e8")
-	)
-	(wire
-		(pts
 			(xy 83.82 87.63) (xy 85.09 87.63)
 		)
 		(stroke
@@ -4602,16 +4522,6 @@
 	)
 	(wire
 		(pts
-			(xy 180.34 120.65) (xy 181.61 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5cd3d866-bd2b-4983-acc8-1df1561d8c78")
-	)
-	(wire
-		(pts
 			(xy 260.35 81.28) (xy 260.35 82.55)
 		)
 		(stroke
@@ -4619,16 +4529,6 @@
 			(type default)
 		)
 		(uuid "5dbb698f-e2b8-41c1-8a56-a1ef786e1740")
-	)
-	(wire
-		(pts
-			(xy 180.34 123.19) (xy 181.61 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5f85c899-1155-43f2-9558-63543bdc5e81")
 	)
 	(wire
 		(pts
@@ -4649,16 +4549,6 @@
 			(type default)
 		)
 		(uuid "721295bc-426d-489c-99d4-fb130e0bec16")
-	)
-	(wire
-		(pts
-			(xy 139.7 120.65) (xy 149.86 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "740db1c0-5373-4b20-b119-0d06dd995285")
 	)
 	(wire
 		(pts
@@ -5012,16 +4902,6 @@
 	)
 	(wire
 		(pts
-			(xy 139.7 120.65) (xy 139.7 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d53e6ec2-8767-4c3b-9e95-4b149d66b641")
-	)
-	(wire
-		(pts
 			(xy 83.82 43.18) (xy 83.82 44.45)
 		)
 		(stroke
@@ -5029,16 +4909,6 @@
 			(type default)
 		)
 		(uuid "d6b5822e-a90f-49d8-932c-1a64ba3fbb9f")
-	)
-	(wire
-		(pts
-			(xy 138.43 120.65) (xy 139.7 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d74815e7-cc7b-4e77-b6d6-f9a1a60e7a10")
 	)
 	(wire
 		(pts
@@ -5120,25 +4990,15 @@
 		)
 		(uuid "0114092b-0aed-41ab-bf94-04ac0dc73254")
 	)
-	(label "SPI SCK Bean"
-		(at 124.46 120.65 0)
+	(label "I2C SCL"
+		(at 180.34 102.87 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "06315769-67c3-4057-a44a-36f2eedca586")
-	)
-	(label "SPI SCK Intake"
-		(at 124.46 118.11 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "09a216d0-d221-41ee-9979-c6fea6f15a35")
+		(uuid "0595f40d-2d01-40a5-92e3-fa65c2bdadbb")
 	)
 	(label "Fan Value"
 		(at 181.61 115.57 0)
@@ -5270,6 +5130,16 @@
 		)
 		(uuid "42e6aabb-22ee-4797-8f03-ab676502172c")
 	)
+	(label "SPI MISO"
+		(at 180.34 105.41 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4c3a5a37-72cc-432c-8511-3d5ae17de447")
+	)
 	(label "Fan Base"
 		(at 181.61 107.95 0)
 		(effects
@@ -5279,16 +5149,6 @@
 			(justify left bottom)
 		)
 		(uuid "5853bc06-71eb-4109-a600-0ce9dd897be1")
-	)
-	(label "SPI MISO Intake"
-		(at 191.77 105.41 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "59a16b25-1c97-4eaa-b6e0-99f9d6974d30")
 	)
 	(label "SPI CS Intake"
 		(at 134.62 105.41 0)
@@ -5310,16 +5170,6 @@
 		)
 		(uuid "67111748-9528-485a-88e4-feef19895f9b")
 	)
-	(label "Load Cell DOUT"
-		(at 181.61 123.19 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "68b4e42f-fa87-493e-b828-aeae00176441")
-	)
 	(label "SPI SCK Bean"
 		(at 113.03 49.53 0)
 		(effects
@@ -5330,16 +5180,6 @@
 		)
 		(uuid "695e3d27-ed54-4d27-ac1a-34c180cab6d2")
 	)
-	(label "I2C SCL"
-		(at 181.61 102.87 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "69ce00c5-beb1-4f40-984f-1933b6c2137e")
-	)
 	(label "SPI SCK"
 		(at 149.86 120.65 180)
 		(effects
@@ -5349,6 +5189,16 @@
 			(justify right bottom)
 		)
 		(uuid "69e2726b-26ba-4fc0-8f0a-2a096cc1b201")
+	)
+	(label "Load Cell DOUT"
+		(at 180.34 95.25 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "782832dc-f1d5-4849-824f-13461673125e")
 	)
 	(label "I2C SDA"
 		(at 149.86 49.53 180)
@@ -5381,14 +5231,14 @@
 		(uuid "9d9a3f48-98af-42d3-bfdd-1aee1d23e4ac")
 	)
 	(label "Load Cell SCK"
-		(at 181.61 120.65 0)
+		(at 180.34 97.79 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "a70c84d7-2e20-4549-a1e7-ae9b34ff4040")
+		(uuid "a3dceaee-0357-4bc6-bf08-b300bc4bf5c4")
 	)
 	(label "Button 1"
 		(at 20.32 66.04 0)
@@ -5410,7 +5260,7 @@
 		)
 		(uuid "c05d23d8-178b-42a2-8a1b-4a2189b58e3b")
 	)
-	(label "SPI SCK Intake"
+	(label "SPI SCK"
 		(at 114.3 85.09 0)
 		(effects
 			(font
@@ -5479,16 +5329,6 @@
 			(justify left bottom)
 		)
 		(uuid "f9d75533-f115-4365-930e-e5fe6fbd55ad")
-	)
-	(label "SPI MISO Bean"
-		(at 191.77 102.87 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "fb3c4e6a-2aec-4ec6-822a-83e53364dde8")
 	)
 	(label "Button 0"
 		(at 139.7 118.11 0)

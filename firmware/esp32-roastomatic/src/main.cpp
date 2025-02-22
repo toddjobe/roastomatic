@@ -51,11 +51,11 @@ struct Hx711Mode
 };
 
 const Hx711Mode HX711_MODES[] = {
-    {"Raw      ", &HX711::set_raw_mode},
     {"Average  ", &HX711::set_average_mode},
     {"Median   ", &HX711::set_median_mode},
-    {"Run. Avg.", &HX711::set_runavg_mode},
     {"Med. Avg.", &HX711::set_medavg_mode},
+    {"Run. Avg.", &HX711::set_runavg_mode},
+    {"Raw      ", &HX711::set_raw_mode},
 };
 
 typedef void (*FunctionPointer)();
@@ -247,7 +247,8 @@ void setup()
   ESP_ERROR_CHECK(ledc_channel_config(&fan_channel));
 
   // Initialize Load Cell
-  scale.begin(LOAD_CELL_DT_PIN, LOAD_CELL_SCK_PIN);
+  scale.begin(LOAD_CELL_DT_PIN, LOAD_CELL_SCK_PIN, true);
+  scale.set_scale(1.0);
 }
 
 void test_buttons_setup() {}
@@ -307,19 +308,17 @@ void test_potentiometers()
 void test_thermocouples_setup() {}
 void test_thermocouples()
 {
-  char buffer[22];
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.println("Test Thermocouples");
-  display.println("");
-  display.println("Therm.   F. deg.");
-  display.println("-------------------");
-  snprintf(buffer, 22, "Intake  %3d.%02d", (int)intake_temp_f, (int)(intake_temp_f * 10.0) % 10);
-  display.println(buffer);
-  snprintf(buffer, 22, "Bean    %3d.%02d", (int)bean_temp_f, (int)(bean_temp_f * 10.0) % 10);
-  display.println(buffer);
-  display.display();
+  char float_str[7];
+  int i = 0;
+  set_display_row(i++, "%s", "Test Thermocouples");
+  set_display_row(i++, "%s", "Therm.   F. deg.");
+  set_display_row(i++, "%s", "-------------------");
+  set_display_row(i++, "Intake  %s", dtostrf(intake_temp_f, 6, 2, float_str));
+  set_display_row(i++, "Bean    %s", dtostrf(bean_temp_f, 6, 2, float_str));
+  set_display_row(i++, "%s", "");
+  set_display_row(i++, "%s", "");
+  set_display_row(i++, "%s", "");
+  displayArray();
 }
 
 void test_load_cell_setup()
@@ -343,13 +342,15 @@ void test_load_cell()
 {
   if (buttons[1].changed())
   {
+    delay(2000);
     scale.tare();
     buttons[1].reset();
   }
   if (buttons[2].changed())
   {
+    delay(2000);
     scale.calibrate_scale(100);
-    buttons[1].reset();
+    buttons[2].reset();
   }
   if (buttons[3].changed())
   {
@@ -358,15 +359,15 @@ void test_load_cell()
     (scale.*(HX711_MODES[index].mode))();
   }
 
-  char floatStr[10];
+  char float_str[15];
   int i = 0;
   set_display_row(i++, "%s", "Test Scale");
-  set_display_row(i++, "Mode:    %s", HX711_MODES[buttons[3].count()].text);
-  set_display_row(i++, "Mode #:  %d", scale.get_mode());
-  set_display_row(i++, "Offset:  %s", dtostrf(scale.get_offset(), 9, 6, floatStr));
-  set_display_row(i++, "Tare:    %s", dtostrf(scale.get_tare(), 9, 6, floatStr));
-  set_display_row(i++, "Value:   %s", dtostrf(scale.get_value(), 9, 0, floatStr));
-  set_display_row(i++, "Gain:    %d", scale.get_gain());
+  set_display_row(i++, "Mode:%d  %s", scale.get_mode(), HX711_MODES[buttons[3].count()].text);
+  set_display_row(i++, "Offset:%d", (int32_t)scale.get_offset());
+  set_display_row(i++, "Tare:  %d", (int32_t)scale.get_tare());
+  set_display_row(i++, "Scale: %s", dtostrf(scale.get_scale(), 13, 2, float_str));
+  set_display_row(i++, "Value: %d", (int32_t)scale.get_value());
+  set_display_row(i++, "Gain:  %d", scale.get_gain());
   displayArray();
 }
 
