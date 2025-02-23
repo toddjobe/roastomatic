@@ -79,10 +79,10 @@ void test_load_cell();
 // Programs
 
 const Functions FUNCTIONS[] = {
-    //  {test_buttons_setup, test_buttons},
-    //  {test_display_setup, test_display},
-    //  {test_potentiometers_setup, test_potentiometers},
-    //  {test_thermocouples_setup, test_thermocouples},
+    {test_buttons_setup, test_buttons},
+    {test_display_setup, test_display},
+    {test_potentiometers_setup, test_potentiometers},
+    {test_thermocouples_setup, test_thermocouples},
     {test_load_cell_setup, test_load_cell}};
 
 /////////////////////////
