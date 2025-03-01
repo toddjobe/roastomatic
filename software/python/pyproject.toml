@@ -1,0 +1,29 @@
+[project]
+name = "roastomatic"
+version = "0.1.0"
+description = "A brief description of your project"
+authors = [{ name = "Todd Jobe", email = "toddjobe@gmail.com" }]
+license = { text = "MIT" }
+readme = "README.md"
+keywords = ["coffee", "statistics"]
+requires-python = ">=3.10"
+dependencies = ["pyserial"]
+
+[project.optional-dependencies]
+dev = []
+docs = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["roastomatic"]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
