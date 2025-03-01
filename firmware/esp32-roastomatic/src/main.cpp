@@ -35,9 +35,10 @@ const int OLED_RESET = -1;
 // I2C address for the OLED display
 #define OLED_ADDRESS 0x3C
 
-// The potentiometers will turn 300 degrees
+// The potentiometers will turn 270 degrees
+// TODO: The resistance isn't linear.
 const int ADC_BIT_DEPTH = 12;
-const float MAX_DIAL = (300.0 / 360.0) * 10.0;
+const float MAX_DIAL = (270.0 / 360.0) * 10.0;
 const int MAX_POT_VALUE = (1 << ADC_BIT_DEPTH) - 1;
 
 // Only sample the thermocouples every 250ms
@@ -58,6 +59,47 @@ const Hx711Mode HX711_MODES[] = {
     {"Raw      ", &HX711::set_raw_mode},
 };
 
+const int MIN_LOAD_CELL_SAMPLE_RATE = 100;
+const float START_SCALE = 420.52;
+
+// manual roast
+const int N_WEIGHT_SAMPLES = 15;           // Number of samples to be taken for tare and calibrate scale
+const float ROAST_WEIGHT_GRAMS = 90.1;     // Will be used to calibrate % drop
+const float MIN_TEMP_FOR_PREHEAT = 325.0;  // Reach this temperature to trigger the TARE state.
+const float MAX_BEAN_TEMP_FOR_DONE = 80.0; // dropping  below this threshold will trigger DONE state
+const float MAX_HEAT_DUTY_FOR_DROP = 10;   // dropping below this threshold will trigger DROP state
+const int MIN_SERIAL_PRINT_RATE = 250;    // milliseconds between serial writes
+const int MIN_DISPLAY_RATE = 1000 / 60;    // 60Hz display update rate
+
+enum MANUAL_ROAST_STATES
+{
+  READY,     // 0
+  PREHEAT,   // 1
+  TARE,      // 2
+  LOAD,      // 3
+  CALIBRATE, // 4
+  ROAST,     // 5
+  DROP,      // 6
+  DONE,      // 7
+  NSTATES,   // For modulo arithmetic
+};
+
+enum MANUAL_ROAST_STATES manual_roast_state;
+
+// no more than 4 characters here
+const char *state_strings[] = {
+    "prep",
+    "heat",
+    "tare",
+    "load",
+    "cal.",
+    "cook",
+    "drop",
+    "done",
+    "wrap"};
+
+// Switch between programs
+
 typedef void (*FunctionPointer)();
 struct Functions
 {
@@ -70,20 +112,24 @@ void test_display_setup();
 void test_potentiometers_setup();
 void test_thermocouples_setup();
 void test_load_cell_setup();
+void manual_roast_setup();
 
 void test_buttons();
 void test_display();
 void test_potentiometers();
 void test_thermocouples();
 void test_load_cell();
-// Programs
+void manual_roast();
 
+// Selected Programs to run
 const Functions FUNCTIONS[] = {
-    {test_buttons_setup, test_buttons},
-    {test_display_setup, test_display},
-    {test_potentiometers_setup, test_potentiometers},
-    {test_thermocouples_setup, test_thermocouples},
-    {test_load_cell_setup, test_load_cell}};
+    //{test_buttons_setup, test_buttons},
+    //{test_display_setup, test_display},
+    //{test_potentiometers_setup, test_potentiometers},
+    //{test_thermocouples_setup, test_thermocouples},
+    //{test_load_cell_setup, test_load_cell},
+    {manual_roast_setup, manual_roast},
+};
 
 /////////////////////////
 // Pin Map
@@ -188,9 +234,24 @@ float bean_temp_f;
 float intake_temp_f;
 
 int start_temp_sample;
+
+// HX711 globals
+float raw;
+float weight;
+
+// manual roast globals
+float drop_percent = 0;
+int start_roast_time = 0;
+int elapsed_roast_time = 0;
+int start_total_time = 0;
+int elapsed_total_time = 0;
+int last_display_time = 0;
+int last_serial_write_time = 0;
+
+// program globals
 int current_program = 0;
 char displayArray1[8][22];
-
+char displayArray2[4][10];
 void set_display_row(int row, const char *format, ...)
 {
   va_list args;
@@ -247,8 +308,8 @@ void setup()
   ESP_ERROR_CHECK(ledc_channel_config(&fan_channel));
 
   // Initialize Load Cell
-  scale.begin(LOAD_CELL_DT_PIN, LOAD_CELL_SCK_PIN, true);
-  scale.set_scale(1.0);
+  scale.begin(LOAD_CELL_DT_PIN, LOAD_CELL_SCK_PIN, false);
+  // scale.set_scale(START_SCALE);
 }
 
 void test_buttons_setup() {}
@@ -370,6 +431,153 @@ void test_load_cell()
   set_display_row(i++, "Gain:  %d", scale.get_gain());
   displayArray();
 }
+void manual_roast_setup()
+{
+  // button 1 Calls the Tare
+  // button 2 Calibrates 100.0g
+  // button 3 Switches between mode
+  // If you weigh the whole apparatus,
+  // Then get the raw value right side up
+  // and with 100g.
+  // Then, you get the raw value upside down.
+  // and with 100g.
+  // you should be able to calculate the weight of just the top part, and then store an offset
+
+  buttons[1].setNStates(2);
+  manual_roast_state = READY;
+}
+
+void manual_roast()
+{
+  // manual_roast
+  // Heat and Fan are controlled by the potentiometers.
+  // Steps preheat-tare-load-calibrate-roast-drop-done
+  // Preheat - wait until the inside temp is higher than a french roast would be 455F
+  // Tare - automatically happens with maximal sample rate.  Then switches to load.
+  // Load - Look for weights above 50g.  When it detects that for at least 2 seconds
+  // Calibrate @ 100g - a bunch of times, start timer, percent down
+  // Roast - Timer proceeds until weight is x% and then says "drop"
+  // Drop - Do nothing, you should just cut the heat manually.
+  // Done -
+  // Serial Write - step,millis,bean_temp,intake_temp,raw_weight.
+
+  int t = millis();
+
+  // increment the state with button press (as an test)
+  if (buttons[1].changed())
+  {
+    manual_roast_state = (MANUAL_ROAST_STATES)((manual_roast_state + 1) % NSTATES);
+    buttons[1].reset();
+  }
+
+  switch (manual_roast_state)
+  {
+  case (READY): // until a reach a temperature
+    start_total_time = t;
+    manual_roast_state = PREHEAT;
+    break;
+  case (PREHEAT): // until a reach a temperature
+    if (intake_temp_f >= MIN_TEMP_FOR_PREHEAT)
+    {
+      manual_roast_state = TARE;
+    }
+    break;
+  case (TARE):
+    scale.tare(); // This is blocking code
+    manual_roast_state = LOAD;
+    break;
+  case (LOAD):
+    /*
+    if (weight > (0.5 * ROAST_WEIGHT_GRAMS))
+    {
+      start_roast_time = t;
+      manual_roast_state = CALIBRATE;
+    }
+    */
+    break;
+  case (CALIBRATE):
+    start_roast_time = t;
+    scale.calibrate_scale(ROAST_WEIGHT_GRAMS); // This is blocking code
+    manual_roast_state = ROAST;
+    break;
+  case (ROAST):
+    if (heat_duty <= MAX_HEAT_DUTY_FOR_DROP) // percent
+    {
+      manual_roast_state = DROP;
+    }
+    drop_percent = 100 * (ROAST_WEIGHT_GRAMS - weight) / ROAST_WEIGHT_GRAMS;
+    elapsed_roast_time = t - start_roast_time;
+    break;
+  case (DROP):
+    if (bean_temp_f < MAX_BEAN_TEMP_FOR_DONE)
+    {
+      manual_roast_state = DONE;
+    }
+    break;
+  }
+
+  elapsed_total_time = t - start_total_time;
+
+  if (t - last_display_time > MIN_DISPLAY_RATE)
+  {
+    // bigger display than normal
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+
+    // line 0
+    char buffer[11];
+    char float_string[5];
+    dtostrf((drop_percent > 0.0) ? drop_percent : 0.0, 4, 2, float_string);
+    snprintf(buffer, 10, "%s %s", state_strings[manual_roast_state], float_string);
+    display.println(buffer);
+
+    // line 1
+    snprintf(buffer, 11, "%01ld:%02ld %02ld:%02ld",
+             elapsed_roast_time / (60 * 1000), // Minutes
+             (elapsed_roast_time / 1000) % 60, // Seconds
+             elapsed_total_time / (60 * 1000), // Minutes
+             (elapsed_total_time / 1000) % 60  // Seconds
+    );
+    display.println(buffer);
+
+    // line 2
+    dtostrf(bean_temp_f, 4, 1, float_string);
+    snprintf(buffer, 11, "%03d %s", fan_duty, float_string);
+    display.println(buffer);
+
+    // line 3
+    dtostrf(intake_temp_f, 4, 1, float_string);
+    snprintf(buffer, 11, "%03d %s", heat_duty, float_string);
+    display.println(buffer);
+    display.display();
+
+    last_display_time = t;
+  }
+  // Write a csv file to serial.
+  if ((t - last_serial_write_time) > MIN_SERIAL_PRINT_RATE)
+  {
+    Serial.print(elapsed_roast_time);
+    Serial.print(",");
+    Serial.print(elapsed_total_time);
+    Serial.print(",");
+    Serial.print(state_strings[manual_roast_state]);
+    Serial.print(",");
+    Serial.print(fan_value);
+    Serial.print(",");
+    Serial.print(heat_value);
+    Serial.print(",");
+    Serial.print(bean_temp_f);
+    Serial.print(",");
+    Serial.print(intake_temp_f);
+    Serial.print(",");
+    Serial.print(weight);
+    Serial.print(",");
+    Serial.print(drop_percent);
+    Serial.println("");
+    last_serial_write_time = t;
+  }
+}
 
 void loop()
 {
@@ -384,12 +592,13 @@ void loop()
   heat_dial = (MAX_DIAL * heat_value * 100.0) / MAX_POT_VALUE;
 
   // Read the MAX6675 amplified thermocouples
-  int elapsed_temp_sample = millis() - start_temp_sample;
+  int t = millis();
+  int elapsed_temp_sample = t - start_temp_sample;
   if (elapsed_temp_sample >= MIN_TEMP_SAMPLE_RATE)
   {
     bean_temp_f = bean_thermocouple.readFarenheit();
     intake_temp_f = intake_thermocouple.readFarenheit();
-    start_temp_sample = millis();
+    start_temp_sample = t;
   }
 
   // Set the duty cycle of the heat PWM based on heat potentiometer
@@ -400,13 +609,18 @@ void loop()
   ledc_set_duty(FAN_MODE, FAN_CHANNEL, fan_value);
   ledc_update_duty(FAN_MODE, FAN_CHANNEL);
 
-  // Select correct program
+  // Read the raw weight
+  if ((t - scale.last_time_read()) >= MIN_LOAD_CELL_SAMPLE_RATE)
+  {
+    raw = scale.read(); // raw has least amount of blocking
+    weight = scale.get_units();
+  }
+
+  // Select program
   if (current_program != buttons[0].count())
   {
     FUNCTIONS[buttons[0].count()].setup();
   }
-  // Run Correct Program
+  // Run Program
   FUNCTIONS[buttons[0].count()].loop();
-
-  delay(100);
 }
