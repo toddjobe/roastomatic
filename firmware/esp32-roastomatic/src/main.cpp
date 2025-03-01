@@ -1,3 +1,25 @@
+// MIT License
+//
+// Copyright (c) Todd Jobe
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 // Standard libraries
 #include <driver/ledc.h> // PWM library.  Works with 3.0.7
 #include "esp_err.h"
@@ -68,7 +90,7 @@ const float ROAST_WEIGHT_GRAMS = 90.1;     // Will be used to calibrate % drop
 const float MIN_TEMP_FOR_PREHEAT = 325.0;  // Reach this temperature to trigger the TARE state.
 const float MAX_BEAN_TEMP_FOR_DONE = 80.0; // dropping  below this threshold will trigger DONE state
 const float MAX_HEAT_DUTY_FOR_DROP = 10;   // dropping below this threshold will trigger DROP state
-const int MIN_SERIAL_PRINT_RATE = 250;    // milliseconds between serial writes
+const int MIN_SERIAL_PRINT_RATE = 250;     // milliseconds between serial writes
 const int MIN_DISPLAY_RATE = 1000 / 60;    // 60Hz display update rate
 
 enum MANUAL_ROAST_STATES
