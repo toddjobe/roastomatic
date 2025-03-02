@@ -1,1 +1,5 @@
 pyserial
+jupyter
+pandas
+seaborn
+scipy
