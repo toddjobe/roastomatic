@@ -7,7 +7,7 @@ license = { text = "MIT" }
 readme = "README.md"
 keywords = ["coffee", "statistics"]
 requires-python = ">=3.10"
-dependencies = ["pyserial"]
+dependencies = ["pyserial", "jupyter", "pandas", "seaborn", "scipy"]
 
 [project.optional-dependencies]
 dev = []
