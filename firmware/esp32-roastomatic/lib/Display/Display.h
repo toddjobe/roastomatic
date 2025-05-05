@@ -25,7 +25,7 @@ SOFTWARE.
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include "C:/Users/toddj/Projects/roastomatic/firmware/esp32-roastomatic/.pio/libdeps/esp32doit-devkit-v1/Adafruit SSD1306/Adafruit_SSD1306.h" // OLED display library
+#include <Adafruit_SSD1306.h> // OLED display library
 #include <Wire.h>                                                                                                                              // I2C library
 
 class Display : public Adafruit_SSD1306
