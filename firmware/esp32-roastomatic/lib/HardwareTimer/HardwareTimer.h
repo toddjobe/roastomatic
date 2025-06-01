@@ -1,8 +1,7 @@
 #ifndef HARDWARE_TIMER_H
 #define HARDWARE_TIMER_H
 
-#include "driver/timer.h"
-#include <map>
+#include "driver/gptimer.h"
 
 // Debugging macro
 #define DEBUG 0 // Set to 1 to enable debugging, 0 to disable
@@ -20,24 +19,11 @@
 template <typename T>
 class HardwareTimer
 {
-private:
-    uint8_t _timerId; // Auto-incremented timer index
-    uint32_t _interval;
-    void (*_callback)(T &);
-    T &_object;
-    hw_timer_t *_timer;
-    portMUX_TYPE _timerMux;
-
-    static std::map<uint8_t, HardwareTimer<T> *> instances; // Store instances
-    static uint8_t nextTimerId;                             // Static counter for unique timer IDs
-
 public:
-    HardwareTimer(uint32_t interval, void (*callback)(T &), T &object)
-        : _interval(interval), _callback(callback), _object(object),
+    HardwareTimer(T* instance, uint64_t interval_us, bool auto_reload = true)
+        : _instance(instance), _interval_us(interval_us), _auto_reload(auto_reload),
           _timer(nullptr), _timerMux(portMUX_INITIALIZER_UNLOCKED)
     {
-        _timerId = nextTimerId++;   // Assign unique timer ID and increment counter
-        instances[_timerId] = this; // Register instance
         DEBUG_PRINT_VAL("HardwareTimer created with ID: ", _timerId);
         DEBUG_PRINT_VAL("Interval set to: ", _interval);
     }
@@ -75,13 +61,19 @@ public:
             }
         }
     }
+    
+
+private:
+    static bool IRAM_ATTR timer_isr(gptimer_handle_t, const gptimer_alarm_event_data_t* event, void* user_data)
+    {
+        HardwareTimer* self = static_cast<HardwareTimer*>(user_data)
+        if (self->_instance &
+
+    gptimer_handle_t _timer = nullptr;
+    T* _instance = nullptr;
+    uint64_t _interval_us;
+    bool _auto_reload;
+    bool (T::*_callback)(const gptimer_alarm_event_data_t*) = nullptr;
 };
-
-// Initialize static members
-template <typename T>
-std::map<uint8_t, HardwareTimer<T> *> HardwareTimer<T>::instances;
-
-template <typename T>
-uint8_t HardwareTimer<T>::nextTimerId = 0; // Start at 0 and increment with each instance
 
 #endif // HARDWARE_TIMER_H
