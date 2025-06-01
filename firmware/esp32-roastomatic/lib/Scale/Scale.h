@@ -27,11 +27,11 @@ SOFTWARE.
 
 #include "HX711.h" // Load Cell amplifier Library
 #include "Filter.h"
-#include "HardwareTimer.h"
+#include "SoftwareTimer.h"
 #include <pins_arduino.h> // ESP32 pin definitions
 
 // Debugging macro
-#define DEBUG 1 // Set to 1 to enable debugging, 0 to disable
+#define DEBUG 0 // Set to 1 to enable debugging, 0 to disable
 
 #if DEBUG
 #define DEBUG_PRINT(x) Serial.println(x)
@@ -46,7 +46,7 @@ SOFTWARE.
 class Scale : public HX711
 {
 public:
-    Scale() : HX711(), _timer(MIN_LOAD_CELL_SAMPLE_RATE, Scale::add, std::ref(*this)), _filter()
+    Scale() : HX711(), _timer(MIN_LOAD_CELL_SAMPLE_RATE_MS, Scale::add, std::ref(*this)), _filter()
     {
         DEBUG_PRINT("Scale constructor called.");
     }
@@ -65,14 +65,17 @@ public:
         DEBUG_PRINT("Timer started for Scale.");
         DEBUG_PRINT("Scale setup completed.");
     }
+    void loop()
+    {
+        _timer.poll(); // Poll the timer to check if it's time to sample
+        DEBUG_PRINT("Scale loop polled.");
+    }
 
     static void add(Scale &scale)
     {
-        DEBUG_PRINT("Adding new value to filter...");
         float units = scale.HX711::get_units();
-        DEBUG_PRINT_VAL("Raw units from HX711: ", units);
         scale._filter.add(units);
-        DEBUG_PRINT("Value added to filter.");
+        DEBUG_PRINT_VAL("Sampled units: ", units);
     }
 
     float get_units() const
@@ -91,14 +94,14 @@ public:
 
     // Load Cell Constants
     static const int SCALE_WINDOW_SIZE = 10;
-    static const int MIN_LOAD_CELL_SAMPLE_RATE = 100;
+    static const int MIN_LOAD_CELL_SAMPLE_RATE_MS = 100;
     static constexpr float START_SCALE = 420.52;
     static const int LOAD_CELL_DT_PIN = 17;
     static const int LOAD_CELL_SCK_PIN = 16;
 
 private:
     Filter<float, SCALE_WINDOW_SIZE> _filter;
-    HardwareTimer<Scale> _timer;
+    SoftwareTimer<Scale> _timer;
 };
 
 #endif

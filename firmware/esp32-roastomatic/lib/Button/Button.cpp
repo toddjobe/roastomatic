@@ -24,7 +24,12 @@ int IRAM_ATTR Button::count()
 
 bool IRAM_ATTR Button::changed()
 {
-  return _state != _prev_state;
+  bool changed = _state != _prev_state;
+  if (changed)
+  {
+    _prev_state = _state;
+  }
+  return changed;
 }
 
 // Generic ISR (Interrupt Service Routine)

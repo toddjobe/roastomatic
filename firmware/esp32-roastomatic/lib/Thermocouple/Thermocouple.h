@@ -27,11 +27,11 @@ SOFTWARE.
 
 #include "max6675.h" // Thermocouple amplifier library
 #include "Filter.h"
-#include "HardwareTimer.h"
+#include "SoftwareTimer.h"
 #include <pins_arduino.h> // ESP32 pin definitions
 
 #define THERMOCOUPLE_WINDOW_SIZE 5
-#define THERMOCOUPLE_SAMPLE_RATE_MICROSECONDS 250000
+#define THERMOCOUPLE_SAMPLE_RATE_MILLISECONDS 220
 
 // Thermocouple pins
 // ESP32 Default SPI Pins
@@ -41,27 +41,48 @@ SOFTWARE.
 // SS 5
 #define MISO_PIN 23
 
+#define DEBUG 1
+#if DEBUG
+#define DEBUG_PRINT(x) Serial.println(x)
+#define DEBUG_PRINT_VAL(label, value) \
+    Serial.print(label);              \
+    Serial.println(value)
+#else
+#define DEBUG_PRINT(x)                // No-op
+#define DEBUG_PRINT_VAL(label, value) // No-op
+#endif
+
 class Thermocouple : public MAX6675
 {
 public:
-    Thermocouple(uint8_t CS) : MAX6675(SCK, CS, MISO_PIN), _timer(THERMOCOUPLE_SAMPLE_RATE_MICROSECONDS, Thermocouple::add, std::ref(*this)), _filter() // Alternative to setup, providing a more descriptive name
+    Thermocouple(uint8_t CS) : MAX6675(SCK, CS, MISO_PIN), _timer(THERMOCOUPLE_SAMPLE_RATE_MILLISECONDS, Thermocouple::add, std::ref(*this)), _filter() {}; // Alternative to setup, providing a more descriptive
+
+    void setup()
     {
-        _timer.start();
+        _timer.start(); // Start the timer to begin sampling
+    }
+    void loop()
+    {
+        _timer.poll(); // Poll the timer to check if it's time to sample
     }
 
     static void add(Thermocouple &thermocouple) // You should not call this directly but rather let the timer call it.
     {
-        thermocouple._filter.add(thermocouple.MAX6675::readCelsius());
+        DEBUG_PRINT("Adding temperature value to filter.");
+        float value = thermocouple.MAX6675::readCelsius();
+        thermocouple._filter.add(value);
+        DEBUG_PRINT_VAL("Temperature value added: ", value);
     }
 
     float readCelsius() const
     {
+        DEBUG_PRINT("Reading temperature value from filter.");
         return _filter.get();
     }
 
 private:
     Filter<float, THERMOCOUPLE_WINDOW_SIZE> _filter;
-    HardwareTimer<Thermocouple> _timer;
+    SoftwareTimer<Thermocouple> _timer;
 };
 
 #endif

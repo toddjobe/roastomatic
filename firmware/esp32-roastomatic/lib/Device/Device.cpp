@@ -38,6 +38,12 @@ void Device::setup()
     _scale.setup();
     DEBUG_PRINT("Scale initialized.");
 
+    // Initialize the thermocouples
+    DEBUG_PRINT("Initializing thermocouples...");
+    _intake_thermocouple.setup();
+    _bean_thermocouple.setup();
+    DEBUG_PRINT("Thermocouples initialized.");
+
     // Initialize the buttons
     DEBUG_PRINT("Initializing buttons...");
     for (int i = 0; i < NUM_BUTTONS; i++)
@@ -67,14 +73,22 @@ void Device::loop()
     DEBUG_PRINT("Device loop started.");
 
     // Read all the sensors at their appropriate rate
+    // The potentiometers
     DEBUG_PRINT("Reading potentiometers...");
     _fan_pot.loop();
     _heat_pot.loop();
     DEBUG_PRINT("Potentiometers read.");
 
-    // The MAX6675 amplified thermocouples
-    // And the scale will be read by interrupt
-    // using the HardwareTimer
+    // The scale
+    DEBUG_PRINT("Reading scale...");
+    _scale.loop();
+    DEBUG_PRINT("Scale read.");
+
+    // The thermocouples
+    DEBUG_PRINT("Reading thermocouples...");
+    _bean_thermocouple.loop();
+    _intake_thermocouple.loop();
+    DEBUG_PRINT("Thermocouples read.");
 
     // Check for button presses to change the mode
     DEBUG_PRINT("Checking button 0 for mode change...");

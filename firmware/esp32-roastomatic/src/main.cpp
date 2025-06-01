@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 // Debugging macro
-#define DEBUG 1 // Set to 1 to enable debugging, 0 to disable
+#define DEBUG 0 // Set to 1 to enable debugging, 0 to disable
 
 #if DEBUG
 #define DEBUG_PRINT(x) Serial.println(x)

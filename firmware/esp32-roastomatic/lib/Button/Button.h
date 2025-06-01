@@ -11,7 +11,7 @@ public:
   void reset();
   void setNStates(int nStates = 2);
   int IRAM_ATTR count();                            // Virtual method for subclasses
-  bool IRAM_ATTR changed();                         // notification
+  bool IRAM_ATTR changed();                         // notify of a button press and reset to current state
   static void IRAM_ATTR handleInterrupt(void *arg); // Generic ISR
 
 protected:

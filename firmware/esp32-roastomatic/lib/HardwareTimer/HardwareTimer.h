@@ -5,7 +5,7 @@
 #include <map>
 
 // Debugging macro
-#define DEBUG 1 // Set to 1 to enable debugging, 0 to disable
+#define DEBUG 0 // Set to 1 to enable debugging, 0 to disable
 
 #if DEBUG
 #define DEBUG_PRINT(x) Serial.println(x)
@@ -65,16 +65,13 @@ public:
 
     static void IRAM_ATTR onTimerInterrupt()
     {
-        DEBUG_PRINT("Timer interrupt triggered.");
         for (auto &pair : instances)
         {
             if (pair.second)
             {
-                DEBUG_PRINT_VAL("Processing timer ID: ", pair.first);
                 portENTER_CRITICAL_ISR(&pair.second->_timerMux);
                 pair.second->_callback(pair.second->_object);
                 portEXIT_CRITICAL_ISR(&pair.second->_timerMux);
-                DEBUG_PRINT_VAL("Callback executed for timer ID: ", pair.first);
             }
         }
     }

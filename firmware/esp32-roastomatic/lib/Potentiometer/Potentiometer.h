@@ -8,6 +8,7 @@
 #include "../Filter/Filter.h"
 #include "../SoftwareTimer/SoftwareTimer.h"
 
+#define FILTER_WINDOW 100 // Size of the filter window
 class Potentiometer
 {
 public:
@@ -20,7 +21,7 @@ public:
     const uint8_t ADC_BIT_DEPTH = 12;                        // 12 bit ADC
     const float_t MAX_DIAL = (270.0 / 360.0) * 10.0;         // 270 degrees of rotation
     const uint16_t MAX_POT_VALUE = (1 << ADC_BIT_DEPTH) - 1; // 2^12 - 1 = 4095
-    const uint32_t SAMPLE_RATE_MS = 2;
+    const uint32_t SAMPLE_RATE_MS = 1;
 
     static void add(Potentiometer &potentiometer)
     {
@@ -50,7 +51,7 @@ public:
 
 protected:
     uint8_t _pin;
-    Filter<uint16_t, 5> _filter;
+    Filter<uint16_t, FILTER_WINDOW> _filter;
     SoftwareTimer<Potentiometer> _timer;
 };
 

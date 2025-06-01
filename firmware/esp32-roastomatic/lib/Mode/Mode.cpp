@@ -9,6 +9,10 @@ void Mode::setup()
     // Initialize the potentiometers
     device.getFanPot().setup();
     device.getHeatPot().setup();
+
+    // Initialize the PWM for the fan and heat
+    device.getFanPwm().setup();
+    device.getHeatPwm().setup();
 };
 
 void Mode::loop()
